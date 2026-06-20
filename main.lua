@@ -1,13 +1,24 @@
 --[[
-    奶油 / Creamy UI Engine v2.0
+    奶油 / Creamy UI Engine v2.0 + Autofarm Integration
     Reconstructed for absolute smoothness, reliability, and modern aesthetics.
-    完全独立 - Drop-in replacement with maximum visual polish.
 ]]
 
-local module = {}
-local ts = cloneref(game:GetService("TweenService"))
-local cg = cloneref(game:GetService("CoreGui"))
-local ui = cloneref(game:GetService("UserInputService"))
+-- Universal Executor Compatibility Layer
+local cRef = cloneref or function(obj) return obj end
+local ts = cRef(game:GetService("TweenService"))
+local ui = cRef(game:GetService("UserInputService"))
+
+-- Safe Screen Parent Selector (Solara/Wave/Celery Friendly)
+local screenParent
+local hui = gethui or get_hidden_gui
+local success, coregui = pcall(function() return game:GetService("CoreGui") end)
+if hui then
+    screenParent = hui()
+elseif success and coregui then
+    screenParent = coregui
+else
+    screenParent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+end
 
 -- Creamy Espresso & Ivory Palette
 local THEME = {
@@ -29,15 +40,16 @@ local function quickTween(obj, props, duration, style)
     return t
 end
 
-function module:win(title)
+-- Injected Variable to match your script's calls perfectly
+local CalmLib = {}
+
+function CalmLib:win(title)
     local screen = Instance.new("ScreenGui")
     screen.Name = "CreamyUI_Engine"
     screen.ResetOnSpawn = false
-    
-    local hui = gethui or get_hidden_gui or nil
-    screen.Parent = hui and hui() or cg
+    screen.Parent = screenParent
 
-    -- Main Window Window Frame
+    -- Main Window Frame
     local mainFrame = Instance.new("CanvasGroup")
     mainFrame.Name = "MainWindow"
     mainFrame.Size = UDim2.new(0, 480, 0, 330)
@@ -68,13 +80,13 @@ function module:win(title)
     windowTitle.Size = UDim2.new(1, -100, 1, 0)
     windowTitle.Position = UDim2.new(0, 15, 0, 0)
     windowTitle.BackgroundTransparency = 1
-    windowTitle.Text = tmh ontop:upper()
+    windowTitle.Text = title -- Normal layout casing
     windowTitle.TextColor3 = THEME.Text
     windowTitle.Font = Enum.Font.GothamBold
     windowTitle.TextSize = 13
     windowTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Window Controls Window Button Frame
+    -- Window Controls
     local btns = Instance.new("Frame", topbar)
     btns.Size = UDim2.new(0, 70, 1, 0)
     btns.Position = UDim2.new(1, -75, 0, 0)
@@ -131,39 +143,13 @@ function module:win(title)
     sidebarDivider.BackgroundColor3 = THEME.Border
     sidebarDivider.BorderSizePixel = 0
 
-    -- Section Holder Canvas Window
+    -- Section Holder
     local sectionsholder = Instance.new("Frame", mainFrame)
     sectionsholder.Size = UDim2.new(1, -155, 1, -55)
     sectionsholder.Position = UDim2.new(0, 148, 0, 48)
     sectionsholder.BackgroundTransparency = 1
 
-    -- Core Interaction Logic
-    local toggleCon = nil
-    local isOpen = true
-
-    local function togglewin(isIn)
-        isOpen = isIn
-        mainFrame.Interactable = isOpen
-        quickTween(mainFrame, {GroupTransparency = isOpen and 0 or 1}, 0.3)
-        quickTween(mainFrame, {Size = isOpen and UDim2.new(0, 480, 0, 330) or UDim2.new(0, 480, 0, 310)}, 0.3)
-    end
-
-    closeBtn.MouseButton1Click:Connect(function()
-        screen:Destroy()
-        if toggleCon then toggleCon:Disconnect() end
-    end)
-
-    miniBtn.MouseButton1Click:Connect(function()
-        togglewin(false)
-    end)
-
-    toggleCon = ui.InputBegan:Connect(function(keyc, gamep)
-        if not gamep and keyc.KeyCode == Enum.KeyCode.K then
-            togglewin(not isOpen)
-        end
-    end)
-
-    -- Draggable Feature Smooth Engine
+    -- Smooth Dragging Mechanism
     local dragging, dragInput, mousePos, framePos
     topbar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -197,7 +183,33 @@ function module:win(title)
         end
     end)
 
-    -- Tabs and Elements Logic Loop Frame Factory
+    -- Window Interactions
+    local toggleCon = nil
+    local isOpen = true
+
+    local function togglewin(isIn)
+        isOpen = isIn
+        mainFrame.Interactable = isOpen
+        quickTween(mainFrame, {GroupTransparency = isOpen and 0 or 1}, 0.3)
+        quickTween(mainFrame, {Size = isOpen and UDim2.new(0, 480, 0, 330) or UDim2.new(0, 480, 0, 310)}, 0.3)
+    end
+
+    closeBtn.MouseButton1Click:Connect(function()
+        screen:Destroy()
+        if toggleCon then toggleCon:Disconnect() end
+    end)
+
+    miniBtn.MouseButton1Click:Connect(function()
+        togglewin(false)
+    end)
+
+    toggleCon = ui.InputBegan:Connect(function(keyc, gamep)
+        if not gamep and keyc.KeyCode == Enum.KeyCode.K then
+            togglewin(not isOpen)
+        end
+    end)
+
+    -- Element Engine
     local sections = {}
     local curSelected = nil
     local firstTab = true
@@ -218,9 +230,8 @@ function module:win(title)
         btnStroke.Color = Color3.new(0,0,0)
         btnStroke.Transparency = 1
 
-        -- Smooth handling for Optional Icons
         if ico and ico ~= "" then
-            newBtn.Text = "       " .. title
+            newBtn.Text = "        " .. title
             local iconImg = Instance.new("ImageLabel", newBtn)
             iconImg.Size = UDim2.new(0, 16, 0, 16)
             iconImg.Position = UDim2.new(0, 8, 0.5, -8)
@@ -229,7 +240,6 @@ function module:win(title)
             iconImg.ImageColor3 = THEME.TextMuted
         end
 
-        -- Main Content Scrolling Elements Frame Canvas Template
         local newSect = Instance.new("ScrollingFrame", sectionsholder)
         newSect.Size = UDim2.new(1, 0, 1, 0)
         newSect.BackgroundTransparency = 1
@@ -265,15 +275,11 @@ function module:win(title)
         end
 
         newBtn.MouseEnter:Connect(function()
-            if curSelected ~= newSect then
-                quickTween(newBtn, {TextColor3 = THEME.Text})
-            end
+            if curSelected ~= newSect then quickTween(newBtn, {TextColor3 = THEME.Text}) end
         end)
         
         newBtn.MouseLeave:Connect(function()
-            if curSelected ~= newSect then
-                quickTween(newBtn, {TextColor3 = THEME.TextMuted})
-            end
+            if curSelected ~= newSect then quickTween(newBtn, {TextColor3 = THEME.TextMuted}) end
         end)
 
         newBtn.MouseButton1Click:Connect(function()
@@ -303,7 +309,6 @@ function module:win(title)
 
         local contents = {}
 
-        -- Element Generator Helper Base Layout Module
         local function createBaseElement(sizeY)
             local base = Instance.new("Frame", newSect)
             base.Size = UDim2.new(1, 0, 0, sizeY)
@@ -332,7 +337,6 @@ function module:win(title)
 
         function contents:button(btnTitle, cb)
             local base, stroke = createBaseElement(36)
-            
             local b = Instance.new("TextButton", base)
             b.Size = UDim2.new(1, 0, 1, 0)
             b.BackgroundTransparency = 1
@@ -368,7 +372,6 @@ function module:win(title)
             titleLabel.TextSize = 12
             titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-            -- Smooth Capsule Custom Switch Setup
             local switchBg = Instance.new("Frame", base)
             switchBg.Size = UDim2.new(0, 34, 0, 18)
             switchBg.Position = UDim2.new(1, -44, 0.5, -9)
@@ -398,17 +401,10 @@ function module:win(title)
                 })
             end
 
-            if toggled then
-                task.defer(cb, toggled)
-            end
+            if toggled then task.defer(cb, toggled) end
 
-            triggerBtn.MouseEnter:Connect(function()
-                quickTween(stroke, {Color = THEME.AccentDim})
-            end)
-            triggerBtn.MouseLeave:Connect(function()
-                quickTween(stroke, {Color = THEME.Border})
-            end)
-
+            triggerBtn.MouseEnter:Connect(function() quickTween(stroke, {Color = THEME.AccentDim}) end)
+            triggerBtn.MouseLeave:Connect(function() quickTween(stroke, {Color = THEME.Border}) end)
             triggerBtn.MouseButton1Click:Connect(function()
                 toggled = not toggled
                 updateToggleVisuals()
@@ -416,126 +412,219 @@ function module:win(title)
             end)
         end
 
-        function contents:textbox(boxTitle, default, cb)
-            local base, stroke = createBaseElement(38)
-
-            local titleLabel = Instance.new("TextLabel", base)
-            titleLabel.Size = UDim2.new(0.5, 0, 1, 0)
-            titleLabel.Position = UDim2.new(0, 12, 0, 0)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = boxTitle
-            titleLabel.TextColor3 = THEME.Text
-            titleLabel.Font = Enum.Font.GothamMedium
-            titleLabel.TextSize = 12
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-            local boxFrame = Instance.new("Frame", base)
-            boxFrame.Size = UDim2.new(0.4, 0, 0, 24)
-            boxFrame.Position = UDim2.new(0.6, -12, 0.5, -12)
-            boxFrame.BackgroundColor3 = THEME.Element
-            Instance.new("UICorner", boxFrame).CornerRadius = UDim.new(0, 4)
-            local bfStroke = Instance.new("UIStroke", boxFrame)
-            bfStroke.Color = THEME.Border
-
-            local inp = Instance.new("TextBox", boxFrame)
-            inp.Size = UDim2.new(1, -10, 1, 0)
-            inp.Position = UDim2.new(0, 5, 0, 0)
-            inp.BackgroundTransparency = 1
-            inp.Text = default
-            inp.TextColor3 = THEME.Text
-            inp.Font = Enum.Font.Gotham
-            inp.TextSize = 11
-            inp.ClipsDescendants = true
-
-            if default ~= "" then
-                task.defer(cb, default)
-            end
-
-            inp.Focused:Connect(function()
-                quickTween(bfStroke, {Color = THEME.Accent})
-            end)
-
-            inp.FocusLost:Connect(function(ep)
-                quickTween(bfStroke, {Color = THEME.Border})
-                if ep then
-                    cb(inp.Text)
-                end
-            end)
-        end
-
-        function contents:slider(slTitle, min, max, default, cb)
-            local base, stroke = createBaseElement(44)
-
-            local titleLabel = Instance.new("TextLabel", base)
-            titleLabel.Size = UDim2.new(1, -20, 0, 20)
-            titleLabel.Position = UDim2.new(0, 12, 0, 4)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = slTitle .. " : " .. tostring(default)
-            titleLabel.TextColor3 = THEME.Text
-            titleLabel.Font = Enum.Font.GothamMedium
-            titleLabel.TextSize = 11
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-            local slbtn = Instance.new("TextButton", base)
-            slbtn.Size = UDim2.new(1, -24, 0, 6)
-            slbtn.Position = UDim2.new(0, 12, 0, 28)
-            slbtn.BackgroundColor3 = THEME.Element
-            slbtn.Text = ""
-            slbtn.AutoButtonColor = false
-            Instance.new("UICorner", slbtn).CornerRadius = UDim.new(1, 0)
-
-            local prog = Instance.new("Frame", slbtn)
-            prog.Size = UDim2.new(0, 0, 1, 0)
-            prog.BackgroundColor3 = THEME.Accent
-            Instance.new("UICorner", prog).CornerRadius = UDim.new(1, 0)
-
-            local lastval = default
-            local draggingSlider = false
-
-            local function setFromAlpha(alpha)
-                alpha = math.clamp(alpha, 0, 1)
-                local value = math.floor(min + (max - min) * alpha + 0.5)
-                quickTween(prog, {Size = UDim2.new(alpha, 0, 1, 0)}, 0.1)
-                lastval = value
-                titleLabel.Text = slTitle .. " : " .. tostring(lastval)
-            end
-
-            local function updateFromInput(x)
-                local rel = (x - slbtn.AbsolutePosition.X) / slbtn.AbsoluteSize.X
-                setFromAlpha(rel)
-            end
-
-            setFromAlpha((default - min) / (max - min))
-
-            slbtn.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    draggingSlider = true
-                    updateFromInput(input.Position.X)
-                    quickTween(stroke, {Color = THEME.AccentDim})
-                end
-            end)
-
-            ui.InputChanged:Connect(function(input)
-                if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                    updateFromInput(input.Position.X)
-                end
-            end)
-
-            ui.InputEnded:Connect(function(input)
-                if draggingSlider and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-                    draggingSlider = false
-                    quickTween(stroke, {Color = THEME.Border})
-                    if cb then
-                        pcall(cb, lastval)
-                    end
-                end
-            end)
-        end
-
         return contents
     end
-
     return sections
 end
 
-return module
+-- =========================================================================
+-- YOUR AUTOFARM EXECUTION PIPELINE
+-- =========================================================================
+
+local window = CalmLib:win("sub 2 vaehz")
+local section1 = window:tab("Autofarm", "rbxassetid://109121102062195")
+local section2 = window:tab("Settings", "rbxassetid://99579688577014")
+
+local plr = game:GetService("Players").LocalPlayer
+
+getgenv().farming = false
+getgenv().farmsettings = {
+    purchase = true,
+    upgrade = true,
+    collect = true,
+    cashdrop = true,
+    fruit = true
+}
+
+local tycoon
+for _, v in pairs(workspace:GetChildren()) do
+    if v.Name:find("Tycoon") and v:FindFirstChild("Owner").Value == plr then
+        tycoon = v
+    end
+end
+
+local suffixes = {
+    K   = 1e3,
+    M   = 1e6,
+    B   = 1e9,
+    T   = 1e12,
+    Qd  = 1e15,
+    Qn  = 1e18,
+    Sx  = 1e21,
+    Sxd = 1e21,
+    Sp  = 1e24,
+    Oc  = 1e27,
+    No  = 1e30,
+    Dc  = 1e33,
+}
+
+function decodeValue(str)
+    local clean = str:gsub("[\226\128\128-\226\128\143]", "")
+
+    local numStr, suffix = clean:match("%$([%d%,%.]+)(%a*)")
+    if not numStr then
+        return nil
+    end
+
+    local num = tonumber((numStr:gsub(",", "")))
+    if not num then
+        return nil
+    end
+
+    if suffix == "" then
+        return num
+    end
+
+    local multiplier = suffixes[suffix]
+
+    if not multiplier then
+        suffix = suffix:sub(1,1):upper() .. suffix:sub(2):lower()
+        multiplier = suffixes[suffix]
+    end
+
+    if multiplier then
+        return num * multiplier
+    end
+
+    return num
+end
+
+local PurchasesFold = tycoon.Purchases
+
+tycoon.Remotes.PhoneOffer.OnClientEvent:Connect(function()
+    if not getgenv().farming then return end
+    local Event = tycoon.Remotes.PhoneOffer
+    Event:FireServer(
+        "Accept"
+    )
+end)
+
+section1:toggle("Autofarm", false, function(bool)
+    local stands = tycoon.Values.Income.Streams
+    getgenv().farming = bool
+    if not getgenv().farming then return end
+    task.spawn(function()
+        while getgenv().farming do
+            if not getgenv().farmsettings.collect then task.wait(1) continue end
+            -- Step 1. Collect money
+            for i, v in pairs(stands:GetChildren()) do
+                local Event = tycoon.Remotes.WakeIncomeStream
+                Event:InvokeServer(
+                    v.Name
+                )
+            end
+            task.wait()
+        end
+    end)
+
+    while getgenv().farming do
+        -- Step 2. Buy cool stuff
+        pcall(function()
+            if not getgenv().farmsettings.purchase then return end
+            for _, fold in pairs(PurchasesFold:GetChildren()) do
+                if fold:FindFirstChild("Buttons") then
+                    for i, nFold in pairs(fold.Buttons:GetChildren()) do
+                        if nFold:IsA("Folder") then
+                            for _,btn in pairs(nFold:GetChildren()) do
+                                if btn:GetAttribute("Shown") and btn:GetAttribute("Enabled") and not btn:GetAttribute("Purchased") then
+                                    local price = decodeValue(btn.Button.Gui.Price.Text)
+                                    local curbalance = decodeValue(plr.leaderstats.Cash.Value)
+
+                                    if price <= curbalance then
+                                        firetouchinterest(plr.Character.Head, btn.Button, true)
+                                        task.wait()
+                                        firetouchinterest(plr.Character.Head, btn.Button, false)
+                                    end
+                                end
+                            end
+                        elseif nFold:IsA("Model") then
+                            if nFold:GetAttribute("Shown") and nFold:GetAttribute("Enabled") and not nFold:GetAttribute("Purchased") then
+                                local price = decodeValue(nFold.Button.Gui.Price.Text)
+                                local curbalance = decodeValue(plr.leaderstats.Cash.Value)
+
+                                if price <= curbalance then
+                                    firetouchinterest(plr.Character.Head, nFold.Button, true)
+                                    task.wait()
+                                    firetouchinterest(plr.Character.Head, nFold.Button, false)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+
+        -- Step 3. Upgrade everything
+        pcall(function()
+            if not getgenv().farmsettings.upgrade then return end
+            for _, fold in pairs(PurchasesFold:GetChildren()) do
+                if fold:FindFirstChild(fold.Name) then
+                    if not fold:FindFirstChild(fold.Name):GetAttribute("Enabled") then
+                        continue
+                    end
+                    fold:FindFirstChild(fold.Name):FindFirstChild(fold.Name).Upgrade:InvokeServer(1)
+                end
+            end
+        end)
+
+        -- Step 4. Cash drops
+        pcall(function()
+            if not getgenv().farmsettings.cashdrop then return end
+            for i, v in pairs(workspace.CashDrops:GetChildren()) do
+                firetouchinterest(plr.Character.Head, v, true)
+                task.wait()
+                firetouchinterest(plr.Character.Head, v, false)
+            end
+        end)
+
+        -- Step 5. Collect fruit
+        pcall(function()
+            if not getgenv().farmsettings.fruit then return end
+            for i, v in pairs(tycoon.Constant.Trees:GetChildren()) do
+                for _, lemon in pairs(v:GetChildren()) do
+                    if not lemon.Name == "Fruit" then continue end
+                    if not lemon:FindFirstChild("ClickPart") then continue end
+                    fireclickdetector(lemon.ClickPart.ClickDetector)
+                    task.wait()
+                end
+            end
+        end)
+
+        task.wait(1)
+    end
+end)
+
+section1:label("Settings:")
+
+section1:toggle("Auto Purchase", true, function(v)
+    getgenv().farmsettings.purchase = v
+end)
+section1:toggle("Auto Collect", true, function(v)
+    getgenv().farmsettings.collect = v
+end)
+section1:toggle("Auto Upgrade", true, function(v)
+    getgenv().farmsettings.upgrade = v
+end)
+section1:toggle("Auto Cash Drop", true, function(v)
+    getgenv().farmsettings.cashdrop = v
+end)
+section1:toggle("Auto Pickup Fruit", true, function(v)
+    getgenv().farmsettings.fruit = v
+end)
+
+getgenv().antiafk = true
+
+plr.Idled:Connect(function()
+    if not getgenv().antiafk then return end
+    game:GetService("VirtualUser"):Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    game:GetService("VirtualUser"):Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+end)
+
+-- Settings
+section2:toggle("Disable 3D Rendering", false, function(v)
+    game:GetService("RunService"):Set3dRenderingEnabled(not v)
+end)
+
+section2:toggle("Anti AFK", true, function(v)
+    getgenv().antiafk = v
+end)
