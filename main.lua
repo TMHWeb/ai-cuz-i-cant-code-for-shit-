@@ -1,6 +1,6 @@
 --[[
-    奶油 / Creamy UI Engine v2.0 + Autofarm Integration
-    Reconstructed for absolute smoothness, reliability, and modern aesthetics.
+    奶油 / Creamy UI Engine v2.1 + Autofarm Integration
+    Optimized with hardware-accelerated click routing and absolute canvas scaling.
 ]]
 
 -- Universal Executor Compatibility Layer
@@ -40,7 +40,6 @@ local function quickTween(obj, props, duration, style)
     return t
 end
 
--- Injected Variable to match your script's calls perfectly
 local CalmLib = {}
 
 function CalmLib:win(title)
@@ -49,13 +48,14 @@ function CalmLib:win(title)
     screen.ResetOnSpawn = false
     screen.Parent = screenParent
 
-    -- Main Window Frame
-    local mainFrame = Instance.new("CanvasGroup")
+    -- Main Window Frame (Changed from CanvasGroup to Frame to eliminate click-blocking bugs)
+    local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainWindow"
     mainFrame.Size = UDim2.new(0, 480, 0, 330)
     mainFrame.Position = UDim2.new(0.5, -240, 0.5, -165)
     mainFrame.BackgroundColor3 = THEME.Background
     mainFrame.BorderSizePixel = 0
+    mainFrame.ClipsDescendants = true
     mainFrame.Parent = screen
 
     Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
@@ -80,7 +80,7 @@ function CalmLib:win(title)
     windowTitle.Size = UDim2.new(1, -100, 1, 0)
     windowTitle.Position = UDim2.new(0, 15, 0, 0)
     windowTitle.BackgroundTransparency = 1
-    windowTitle.Text = title -- Normal layout casing
+    windowTitle.Text = title
     windowTitle.TextColor3 = THEME.Text
     windowTitle.Font = Enum.Font.GothamBold
     windowTitle.TextSize = 13
@@ -137,6 +137,11 @@ function CalmLib:win(title)
     local tabsPadding = Instance.new("UIPadding", tabsContainer)
     tabsPadding.PaddingTop = UDim.new(0, 10)
 
+    -- Dynamic Sidebar Auto-Canvas Adjuster
+    tabsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        tabsContainer.CanvasSize = UDim2.new(0, 0, 0, tabsLayout.AbsoluteContentSize.Y + 20)
+    end)
+
     local sidebarDivider = Instance.new("Frame", mainFrame)
     sidebarDivider.Size = UDim2.new(0, 1, 1, -40)
     sidebarDivider.Position = UDim2.new(0, 140, 0, 40)
@@ -189,9 +194,7 @@ function CalmLib:win(title)
 
     local function togglewin(isIn)
         isOpen = isIn
-        mainFrame.Interactable = isOpen
-        quickTween(mainFrame, {GroupTransparency = isOpen and 0 or 1}, 0.3)
-        quickTween(mainFrame, {Size = isOpen and UDim2.new(0, 480, 0, 330) or UDim2.new(0, 480, 0, 310)}, 0.3)
+        quickTween(mainFrame, {Size = isOpen and UDim2.new(0, 480, 0, 330) or UDim2.new(0, 480, 0, 0)}, 0.3)
     end
 
     closeBtn.MouseButton1Click:Connect(function()
@@ -200,7 +203,7 @@ function CalmLib:win(title)
     end)
 
     miniBtn.MouseButton1Click:Connect(function()
-        togglewin(false)
+        togglewin(not isOpen)
     end)
 
     toggleCon = ui.InputBegan:Connect(function(keyc, gamep)
@@ -209,10 +212,9 @@ function CalmLib:win(title)
         end
     end)
 
-    -- Element Engine
+    -- Fixed Array-based Tab Switching Pipeline
     local sections = {}
-    local curSelected = nil
-    local firstTab = true
+    local registry = {}
 
     function sections:tab(title, ico)
         local newBtn = Instance.new("TextButton", tabsContainer)
@@ -230,9 +232,10 @@ function CalmLib:win(title)
         btnStroke.Color = Color3.new(0,0,0)
         btnStroke.Transparency = 1
 
+        local iconImg = nil
         if ico and ico ~= "" then
             newBtn.Text = "        " .. title
-            local iconImg = Instance.new("ImageLabel", newBtn)
+            iconImg = Instance.new("ImageLabel", newBtn)
             iconImg.Size = UDim2.new(0, 16, 0, 16)
             iconImg.Position = UDim2.new(0, 8, 0.5, -8)
             iconImg.BackgroundTransparency = 1
@@ -244,10 +247,9 @@ function CalmLib:win(title)
         newSect.Size = UDim2.new(1, 0, 1, 0)
         newSect.BackgroundTransparency = 1
         newSect.Visible = false
-        newSect.ScrollBarThickness = 2
+        newSect.ScrollBarThickness = 3
         newSect.ScrollBarImageColor3 = THEME.Border
         newSect.CanvasSize = UDim2.new(0, 0, 0, 0)
-        newSect.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y
 
         local listLayout = Instance.new("UIListLayout", newSect)
         listLayout.Padding = UDim.new(0, 6)
@@ -256,55 +258,49 @@ function CalmLib:win(title)
         sectPadding.PaddingRight = UDim.new(0, 6)
         sectPadding.PaddingLeft = UDim.new(0, 2)
 
-        local function selectTab(active)
+        -- Explicit Height Recalculation Engine (Fixes hidden/cut-off components)
+        listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            newSect.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 15)
+        end)
+
+        local tabEntry = {
+            Button = newBtn,
+            Section = newSect,
+            Stroke = btnStroke,
+            Icon = iconImg
+        }
+        table.insert(registry, tabEntry)
+
+        local function applyState(entry, active)
             if active then
-                quickTween(newBtn, {BackgroundColor3 = THEME.Element, TextColor3 = THEME.Accent})
-                quickTween(btnStroke, {Transparency = 0, Color = THEME.Border})
-                if newBtn:FindFirstChild("ImageLabel") then
-                    quickTween(newBtn.ImageLabel, {ImageColor3 = THEME.Accent})
-                end
-                newSect.Visible = true
+                quickTween(entry.Button, {BackgroundColor3 = THEME.Element, TextColor3 = THEME.Accent})
+                quickTween(entry.Stroke, {Transparency = 0, Color = THEME.Border})
+                if entry.Icon then quickTween(entry.Icon, {ImageColor3 = THEME.Accent}) end
+                entry.Section.Visible = true
             else
-                quickTween(newBtn, {BackgroundColor3 = THEME.Sidebar, TextColor3 = THEME.TextMuted})
-                quickTween(btnStroke, {Transparency = 1})
-                if newBtn:FindFirstChild("ImageLabel") then
-                    quickTween(newBtn.ImageLabel, {ImageColor3 = THEME.TextMuted})
-                end
-                newSect.Visible = false
+                quickTween(entry.Button, {BackgroundColor3 = THEME.Sidebar, TextColor3 = THEME.TextMuted})
+                quickTween(entry.Stroke, {Transparency = 1})
+                if entry.Icon then quickTween(entry.Icon, {ImageColor3 = THEME.TextMuted}) end
+                entry.Section.Visible = false
             end
         end
 
         newBtn.MouseEnter:Connect(function()
-            if curSelected ~= newSect then quickTween(newBtn, {TextColor3 = THEME.Text}) end
+            if not newSect.Visible then quickTween(newBtn, {TextColor3 = THEME.Text}) end
         end)
         
         newBtn.MouseLeave:Connect(function()
-            if curSelected ~= newSect then quickTween(newBtn, {TextColor3 = THEME.TextMuted}) end
+            if not newSect.Visible then quickTween(newBtn, {TextColor3 = THEME.TextMuted}) end
         end)
 
         newBtn.MouseButton1Click:Connect(function()
-            if curSelected == newSect then return end
-            if curSelected ~= nil then
-                for _, b in pairs(tabsContainer:GetChildren()) do
-                    if b:IsA("TextButton") and b.Name == curSelected.Name then
-                        quickTween(b, {BackgroundColor3 = THEME.Sidebar, TextColor3 = THEME.TextMuted})
-                        quickTween(b:FindFirstChild("UIStroke"), {Transparency = 1})
-                        if b:FindFirstChild("ImageLabel") then quickTween(b.ImageLabel, {ImageColor3 = THEME.TextMuted}) end
-                    end
-                end
-                curSelected.Visible = false
+            for _, entry in pairs(registry) do
+                applyState(entry, entry.Button == newBtn)
             end
-
-            curSelected = newSect
-            newSect.Name = title
-            selectTab(true)
         end)
 
-        if firstTab then
-            firstTab = false
-            curSelected = newSect
-            newSect.Name = title
-            selectTab(true)
+        if #registry == 1 then
+            applyState(tabEntry, true)
         end
 
         local contents = {}
@@ -418,7 +414,7 @@ function CalmLib:win(title)
 end
 
 -- =========================================================================
--- YOUR AUTOFARM EXECUTION PIPELINE
+-- AUTOFARM DATA PIPELINE
 -- =========================================================================
 
 local window = CalmLib:win("sub 2 vaehz")
@@ -494,31 +490,26 @@ local PurchasesFold = tycoon.Purchases
 tycoon.Remotes.PhoneOffer.OnClientEvent:Connect(function()
     if not getgenv().farming then return end
     local Event = tycoon.Remotes.PhoneOffer
-    Event:FireServer(
-        "Accept"
-    )
+    Event:FireServer("Accept")
 end)
 
 section1:toggle("Autofarm", false, function(bool)
     local stands = tycoon.Values.Income.Streams
     getgenv().farming = bool
     if not getgenv().farming then return end
+    
     task.spawn(function()
         while getgenv().farming do
             if not getgenv().farmsettings.collect then task.wait(1) continue end
-            -- Step 1. Collect money
             for i, v in pairs(stands:GetChildren()) do
                 local Event = tycoon.Remotes.WakeIncomeStream
-                Event:InvokeServer(
-                    v.Name
-                )
+                Event:InvokeServer(v.Name)
             end
             task.wait()
         end
     end)
 
     while getgenv().farming do
-        -- Step 2. Buy cool stuff
         pcall(function()
             if not getgenv().farmsettings.purchase then return end
             for _, fold in pairs(PurchasesFold:GetChildren()) do
@@ -554,7 +545,6 @@ section1:toggle("Autofarm", false, function(bool)
             end
         end)
 
-        -- Step 3. Upgrade everything
         pcall(function()
             if not getgenv().farmsettings.upgrade then return end
             for _, fold in pairs(PurchasesFold:GetChildren()) do
@@ -567,7 +557,6 @@ section1:toggle("Autofarm", false, function(bool)
             end
         end)
 
-        -- Step 4. Cash drops
         pcall(function()
             if not getgenv().farmsettings.cashdrop then return end
             for i, v in pairs(workspace.CashDrops:GetChildren()) do
@@ -577,7 +566,6 @@ section1:toggle("Autofarm", false, function(bool)
             end
         end)
 
-        -- Step 5. Collect fruit
         pcall(function()
             if not getgenv().farmsettings.fruit then return end
             for i, v in pairs(tycoon.Constant.Trees:GetChildren()) do
@@ -620,7 +608,6 @@ plr.Idled:Connect(function()
     game:GetService("VirtualUser"):Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
--- Settings
 section2:toggle("Disable 3D Rendering", false, function(v)
     game:GetService("RunService"):Set3dRenderingEnabled(not v)
 end)
