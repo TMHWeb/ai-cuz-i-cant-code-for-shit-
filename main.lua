@@ -68,7 +68,7 @@ function module:win(title)
     windowTitle.Size = UDim2.new(1, -100, 1, 0)
     windowTitle.Position = UDim2.new(0, 15, 0, 0)
     windowTitle.BackgroundTransparency = 1
-    windowTitle.Text = title:upper()
+    windowTitle.Text = tmh ontop:upper()
     windowTitle.TextColor3 = THEME.Text
     windowTitle.Font = Enum.Font.GothamBold
     windowTitle.TextSize = 13
